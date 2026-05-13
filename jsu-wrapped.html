@@ -1,0 +1,1501 @@
+<!doctype html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  JSU / NCSY Wrapped 2025–2026  — self-contained player      ║
+  ║                                                              ║
+  ║  HOSTING                                                     ║
+  ║  • WordPress: paste contents of <body> into a Custom HTML    ║
+  ║    block, or upload the full file to GitHub Pages and iframe ║
+  ║    it: <iframe src="URL" style="border:none;width:100%;      ║
+  ║    height:100vh;" allow="autoplay"></iframe>                  ║
+  ║  • GitHub Pages / any host: serve this file directly.        ║
+  ║                                                              ║
+  ║  GOOGLE ANALYTICS 4                                          ║
+  ║  When iframed: events track under their own GA4 property.    ║
+  ║  Set GA4_MEASUREMENT_ID below to "G-XXXXXXXXXX" to enable.  ║
+  ║  To also fire events to the parent page's GA4, use           ║
+  ║  postMessage from here + gtag on the parent.                 ║
+  ║                                                              ║
+  ║  DATA                                                        ║
+  ║  All student / chapter metrics live in the DATA object       ║
+  ║  below. Future: replace with a fetch() call to a JSON API   ║
+  ║  keyed by URL param:  ?chapter=northwood-jsu                 ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JSU Wrapped 2025–2026</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Caveat:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ── Design tokens ──────────────────────────────────── */
+:root {
+  --magenta:  #FF2E93;
+  --violet:   #6A2BFF;
+  --plum:     #B721FF;
+  --sun:      #FFB627;
+  --tang:     #FF6B4A;
+  --mint:     #29D69A;
+  --sky:      #00C2FF;
+  --ink:      #150428;
+  --ink-2:    #2A0F4A;
+  --cream:    #FFF4E5;
+  --shadow-pop: 0 18px 40px rgba(20,4,40,.25), 0 4px 10px rgba(20,4,40,.18);
+  --font-display: 'Bricolage Grotesque','Archivo Black',system-ui,sans-serif;
+  --font-body:    'DM Sans',system-ui,sans-serif;
+  --font-marker:  'Caveat',cursive;
+  --font-mono:    'JetBrains Mono',ui-monospace,monospace;
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+
+html,body {
+  height: 100%;
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  background: #0c0010;
+}
+
+/* ── Page shell ─────────────────────────────────────── */
+.page-bg {
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 800px at 80% -10%,#ffd1ec 0%,transparent 60%),
+    radial-gradient(900px 700px at -5% 110%,#d6c4ff 0%,transparent 55%),
+    linear-gradient(180deg,#F7F0FF 0%,#FFF3E8 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 28px;
+  gap: 0;
+}
+
+@media (max-width: 479px) {
+  .page-bg {
+    padding: 0;
+    background: #000;
+  }
+}
+
+/* ── View toggle ────────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  background: rgba(21,4,40,.08);
+  border-radius: 999px;
+  padding: 3px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.view-toggle button {
+  border: 0; cursor: pointer;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 700; font-size: 13px;
+  padding: 7px 20px; border-radius: 999px;
+  transition: all 120ms ease;
+  letter-spacing: .02em;
+  line-height: 1;
+}
+.view-toggle button.active {
+  background: var(--ink);
+  color: var(--sun);
+}
+
+@media (max-width: 479px) {
+  .view-toggle {
+    position: fixed;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    background: rgba(21,4,40,.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.18);
+  }
+  .view-toggle button { color: rgba(255,255,255,.7); font-size: 12px; padding: 6px 16px; }
+  .view-toggle button.active { background: rgba(255,255,255,.18); color: #fff; }
+}
+
+/* ── Story outer (accommodates scaled height) ───────── */
+.story-outer { position: relative; flex-shrink: 0; }
+
+/* ── Story inner (always 430×932, scaled by JS) ─────── */
+.story-inner {
+  width: 430px; height: 932px;
+  border-radius: 44px; overflow: hidden;
+  position: relative;
+  box-shadow: 0 40px 80px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.1);
+  transform-origin: top left;
+  background: #000;
+}
+
+@media (max-width: 479px) {
+  .story-inner { border-radius: 0; box-shadow: none; }
+}
+
+.story-hint {
+  margin-top: 12px; font-size: 11px;
+  color: rgba(21,4,40,.5);
+  font-family: var(--font-mono);
+  letter-spacing: .08em; text-transform: uppercase;
+  text-align: center;
+}
+@media (max-width: 479px) { .story-hint { display: none; } }
+
+/* ── Story card baseline (9:16 surface) ─────────────── */
+.card {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 56px 28px 36px;
+  overflow: hidden;
+  font-family: var(--font-body); color: var(--ink);
+  isolation: isolate;
+}
+.card .eyebrow {
+  font-family: var(--font-body); font-weight: 700;
+  font-size: 12px; letter-spacing: .18em;
+  text-transform: uppercase; opacity: .85;
+}
+.card h1,.card h2 {
+  font-family: var(--font-display); font-weight: 800;
+  letter-spacing: -.02em; margin: 0;
+  line-height: .92; text-wrap: balance;
+}
+.card .copy {
+  font-family: var(--font-body); font-size: 15px;
+  line-height: 1.45; font-weight: 500;
+  text-wrap: pretty; opacity: .9;
+}
+.card .marker { font-family: var(--font-marker); font-weight: 700; }
+
+/* ── Sticker ────────────────────────────────────────── */
+.sticker {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px;
+  font-weight: 700; font-size: 12px;
+  letter-spacing: .08em; text-transform: uppercase;
+  box-shadow: 0 2px 0 rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.12);
+  border: 2px solid rgba(0,0,0,.85);
+}
+
+/* ── CTA buttons ────────────────────────────────────── */
+.cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 14px 22px; border-radius: 999px;
+  font-family: var(--font-body); font-weight: 700; font-size: 15px;
+  letter-spacing: .01em; cursor: pointer; border: 0;
+  transition: transform 120ms ease,box-shadow 120ms ease;
+}
+.cta:hover { transform: translateY(-1px); }
+.cta:active { transform: translateY(1px); }
+.cta-light { background:#fff; color:var(--ink); box-shadow:0 2px 0 rgba(0,0,0,.18),0 8px 18px rgba(0,0,0,.18); }
+.cta-dark  { background:var(--ink); color:#fff; box-shadow:0 2px 0 rgba(0,0,0,.18),0 8px 18px rgba(0,0,0,.25); }
+
+/* ── Animations ─────────────────────────────────────── */
+@keyframes pop-in {
+  0%   { transform:scale(.6) rotate(var(--rot,0deg)); opacity:0; }
+  60%  { transform:scale(1.08) rotate(var(--rot,0deg)); opacity:1; }
+  100% { transform:scale(1) rotate(var(--rot,0deg)); opacity:1; }
+}
+@keyframes rise {
+  0%   { transform:translateY(20px); opacity:0; }
+  100% { transform:translateY(0); opacity:1; }
+}
+@keyframes drift {
+  0%,100% { transform:translateY(0); }
+  50%      { transform:translateY(-10px); }
+}
+@keyframes spin-slow { to { transform:rotate(360deg); } }
+@keyframes flame-flicker {
+  0%,100% { transform:scaleY(1) rotate(-1deg); }
+  50%      { transform:scaleY(1.06) rotate(1deg); }
+}
+@keyframes blink {
+  0%,100% { opacity:1; }
+  50%      { opacity:.2; }
+}
+
+.anim-pop     { animation: pop-in 520ms cubic-bezier(.34,1.56,.64,1) both; }
+.anim-rise    { animation: rise 600ms ease-out both; }
+.anim-drift   { animation: drift 3.2s ease-in-out infinite; }
+.anim-flicker { animation: flame-flicker 1.4s ease-in-out infinite; transform-origin: bottom center; }
+.anim-rise.is-ready,.anim-pop.is-ready { opacity:1 !important; }
+
+/* ── Progress bars ──────────────────────────────────── */
+.story-progress {
+  position:absolute; top:54px; left:0; right:0;
+  z-index:30; display:flex; gap:4px; padding:0 14px;
+}
+.story-progress .seg {
+  flex:1; height:3px; border-radius:99px;
+  background:rgba(255,255,255,.35); overflow:hidden;
+}
+.story-progress .seg .fill {
+  height:100%; width:0%; background:#fff; border-radius:99px;
+}
+
+/* ── Story header (brand + counter) ─────────────────── */
+.story-header {
+  position:absolute; top:64px; left:22px; right:22px;
+  display:flex; align-items:center; justify-content:space-between;
+  z-index:25;
+}
+.story-header .brand {
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-display); font-weight:800;
+  font-size:14px; letter-spacing:.02em;
+}
+.story-header .brand-mark {
+  width:24px; height:24px; border-radius:7px;
+  background:#fff; color:var(--ink);
+  display:grid; place-items:center;
+  font-size:11px; font-weight:900; font-family:var(--font-display);
+}
+
+/* ── Tap zones ──────────────────────────────────────── */
+.story-controls {
+  position:absolute; inset:0;
+  display:grid; grid-template-columns:35% 30% 35%;
+  z-index:20;
+}
+.story-controls > div { cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Optional: replace 'G-XXXXXXXXXX' with your GA4 ID to enable analytics.
+     When hosted as a standalone page (GitHub Pages etc.) this fires directly.
+     When iframed, it tracks under its own GA4 property. -->
+<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script> -->
+
+<script type="text/babel">
+/* ============================================================
+   DATA CONFIG
+   ─────────────────────────────────────────────────────────────
+   Future multi-chapter support:
+
+   const slug = new URLSearchParams(location.search).get('chapter') || 'demo';
+   const DATA = await fetch(`/data/${slug}.json`).then(r => r.json());
+
+   Then wrap App in a loader:
+   function Root() {
+     const [data, setData] = React.useState(null);
+     React.useEffect(() => { loadData().then(setData); }, []);
+     if (!data) return <div style={{color:'#fff',padding:20}}>Loading…</div>;
+     return <App data={data} />;
+   }
+   ============================================================ */
+const DATA = {
+  year: '2025–2026',
+
+  student: {
+    name:               'Maya',
+    school:             'Northwood High School',
+    chapter:            'Northwood JSU',
+    region:             'Atlantic Seaboard',
+    eventsAttended:     14,
+    firstEventName:     'Fall Kickoff Lunch',
+    firstEventDate:     'September 18, 2025',
+    firstEventShort:    'SEP 18, 2025',
+    firstEventVenue:    'Northwood HS',
+    longestStreak:      5,
+    topVibe:            'Social + Jewish Culture',
+    friendsBrought:     2,
+    schoolsInRoom:      7,
+    shabbatons:         2,
+    learningSessions:   6,
+    leadershipMoments:  3,
+    persona:            'The Connector',
+    personaLine:        'You helped turn events into community.',
+  },
+
+  chapter: {
+    name:                    'Northwood JSU',
+    school:                  'Northwood High School',
+    region:                  'Atlantic Seaboard',
+    hashtag:                 '#NorthwoodJSU',
+    events:                  38,
+    uniqueTeens:             186,
+    returningTeens:          112,
+    newTeens:                74,
+    totalMoments:            1240,
+    repeatRate:              62,
+    avgEventsPerPerson:      6.7,
+    biggestEvent:            'Purim Bash',
+    biggestEventMonthLabel:  "MAR '26",
+    biggestEventAttendance:  91,
+    biggestEventSchools:     5,
+    busiestMonth:            'March',
+    busiestMonthMoments:     248,
+    persona:                 'The Big Tent',
+  },
+
+  regional: {
+    name:      'Atlantic Seaboard',
+    teens:     2850,
+    schools:   63,
+    shabbatons: 18,
+  },
+
+  national: {
+    teens:    24000,
+    programs: 6400,
+    moments:  92000,
+  },
+};
+
+/* ============================================================
+   SHARED COMPONENTS
+   ============================================================ */
+const { useState, useEffect, useRef } = React;
+
+function CountUp({ to, duration = 900, suffix = '', prefix = '', trigger = 0 }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let raf, start;
+    const tick = (t) => {
+      if (!start) start = t;
+      const p = Math.min(1, (t - start) / duration);
+      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, duration, trigger]);
+  return <span>{prefix}{n.toLocaleString()}{suffix}</span>;
+}
+
+function Confetti({ density = 28, seed = 1 }) {
+  const rand = (i) => { const s = Math.sin((i+1)*(seed+1)*9.123)*10000; return s-Math.floor(s); };
+  const colors = ['#FF2E93','#FFB627','#29D69A','#6A2BFF','#00C2FF','#FF6B4A','#fff'];
+  const shapes = ['circle','square','tri','star'];
+  const out = [];
+  for (let i = 0; i < density; i++) {
+    const left = rand(i*2)*100, top = rand(i*2+1)*100;
+    const size = 6 + rand(i+99)*10, rot = rand(i+33)*360;
+    const color = colors[i%colors.length], shape = shapes[i%shapes.length];
+    const delay = rand(i+7)*600;
+    let el;
+    if (shape==='circle') el=<span style={{width:size,height:size,borderRadius:999,background:color,display:'block'}}/>;
+    else if (shape==='square') el=<span style={{width:size,height:size,background:color,display:'block',borderRadius:2}}/>;
+    else if (shape==='tri') el=<span style={{width:0,height:0,borderLeft:`${size/2}px solid transparent`,borderRight:`${size/2}px solid transparent`,borderBottom:`${size}px solid ${color}`,display:'block'}}/>;
+    else el=<svg width={size+4} height={size+4} viewBox="0 0 24 24"><path fill={color} d="M12 1l2.9 7.6L23 9.7l-6 5.4 1.7 8.1L12 19l-6.7 4.2L7 15.1 1 9.7l8.1-1.1L12 1z"/></svg>;
+    out.push(<div key={i} className="anim-pop" style={{position:'absolute',left:`${left}%`,top:`${top}%`,transform:`rotate(${rot}deg)`,'--rot':`${rot}deg`,animationDelay:`${delay}ms`,pointerEvents:'none'}}>{el}</div>);
+  }
+  return <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:1}}>{out}</div>;
+}
+
+function Squiggle({ color = '#150428', width = 80, style }) {
+  return (
+    <svg viewBox="0 0 100 20" width={width} style={style} fill="none">
+      <path d="M2 10 Q 12 0, 24 10 T 48 10 T 72 10 T 96 10" stroke={color} strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function Star({ size = 24, color = '#FFB627', style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+      <path fill={color} stroke="#150428" strokeWidth="1.5" strokeLinejoin="round" d="M12 2.5l2.6 6.3 6.8.5-5.2 4.4 1.7 6.6L12 16.7 6.1 20.3 7.8 13.7 2.6 9.3l6.8-.5L12 2.5z"/>
+    </svg>
+  );
+}
+
+function Spark({ size = 18, color = '#fff', style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+      <path fill={color} d="M12 0 L13.5 9.5 L24 12 L13.5 14.5 L12 24 L10.5 14.5 L0 12 L10.5 9.5 Z"/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   STUDENT CARDS  (10 slides)
+   ============================================================ */
+
+// 1 — Cover
+function CardCover({ active }) {
+  const { name, chapter, school, region } = DATA.student;
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#6A2BFF 0%,#FF2E93 55%,#FFB627 100%)',color:'#fff'}}>
+      <Confetti density={32} seed={1}/>
+      <div className="anim-rise" style={{position:'absolute',top:96,left:28,display:'flex',alignItems:'center',gap:10,zIndex:5}}>
+        <div style={{width:40,height:40,borderRadius:12,background:'#fff',color:'#150428',display:'grid',placeItems:'center',fontFamily:'var(--font-display)',fontWeight:900,fontSize:14,border:'2px solid #150428',transform:'rotate(-6deg)'}}>JSU</div>
+        <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:14,letterSpacing:'.04em'}}>NCSY · JSU</div>
+      </div>
+
+      <Star size={36} color="#FFB627" style={{position:'absolute',top:156,right:30,animation:'spin-slow 8s linear infinite',zIndex:5}}/>
+      <Star size={20} color="#29D69A" style={{position:'absolute',top:226,left:36,animation:'drift 3s ease-in-out infinite',zIndex:5}}/>
+
+      <div style={{position:'absolute',left:26,right:26,top:'36%',zIndex:5,transform:'translateY(-50%)'}}>
+        <div className="eyebrow anim-rise" style={{marginBottom:16,fontSize:13}}>✦ {DATA.year} ✦</div>
+        <h1 className="anim-rise" style={{fontSize:78,lineHeight:.86,textShadow:'4px 4px 0 rgba(0,0,0,.18)',fontStyle:'italic',animationDelay:'120ms'}}>
+          {name},<br/>your JSU<br/>year is<br/>
+          <span style={{display:'inline-block',background:'#150428',color:'#FFB627',padding:'0 14px',borderRadius:12,transform:'rotate(-3deg)',fontStyle:'italic',marginTop:8}}>wrapped.</span>
+        </h1>
+      </div>
+
+      <div className="anim-rise" style={{position:'absolute',left:28,right:28,bottom:110,zIndex:5,animationDelay:'320ms'}}>
+        <div style={{fontFamily:'var(--font-marker)',fontSize:30,lineHeight:1,marginBottom:4}}>{chapter}</div>
+        <div style={{fontSize:13,opacity:.9,fontWeight:600}}>{region} · {school}</div>
+      </div>
+
+      <div style={{position:'absolute',bottom:60,left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:6,zIndex:5}}>
+        <span style={{fontFamily:'var(--font-marker)',fontSize:22,color:'#fff',animation:'blink 1.5s ease-in-out infinite'}}>tap to start →</span>
+      </div>
+    </div>
+  );
+}
+
+// 2 — Attendance
+function CardAttendance({ active }) {
+  const { eventsAttended } = DATA.student;
+  const events = Array.from({ length: eventsAttended });
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#FFF4E5 0%,#FFE0C2 100%)'}}>
+      <Squiggle color="rgba(255,46,147,.25)" width={120} style={{position:'absolute',top:80,right:16}}/>
+      <Star size={28} color="#FF2E93" style={{position:'absolute',top:230,right:32,transform:'rotate(15deg)'}}/>
+
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise" style={{color:'#6A2BFF'}}>01 · Attendance</div>
+        <h1 className="anim-rise" style={{fontSize:32,marginTop:12,lineHeight:1,animationDelay:'80ms'}}>
+          You showed up <span className="marker" style={{color:'#FF2E93',fontSize:36}}>this many</span> times.
+        </h1>
+      </div>
+
+      <div className="anim-pop" style={{position:'absolute',top:'38%',left:0,right:0,display:'flex',justifyContent:'center',animationDelay:'200ms'}}>
+        <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:300,lineHeight:.8,letterSpacing:'-.06em',background:'linear-gradient(180deg,#FF2E93 0%,#6A2BFF 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+          <CountUp to={eventsAttended} duration={1200} trigger={active?1:0}/>
+        </div>
+      </div>
+
+      <div style={{position:'absolute',bottom:140,left:28,right:28}}>
+        <div className="copy" style={{marginBottom:12,fontWeight:600,fontSize:12,letterSpacing:'.06em',textTransform:'uppercase',color:'rgba(21,4,40,.6)'}}>Sep '25 ━━━━━━━━━ Jun '26</div>
+        <div style={{display:'flex',gap:4,alignItems:'center',height:32}}>
+          {events.map((_,i) => (
+            <div key={i} style={{flex:1,height:22+(i%3)*6,borderRadius:4,background:i%4===0?'#FF2E93':i%4===1?'#FFB627':i%4===2?'#6A2BFF':'#29D69A',animation:'rise 600ms both',animationDelay:`${300+i*50}ms`}}/>
+          ))}
+        </div>
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'700ms'}}>
+        From lunch clubs to BBQs, you made JSU part of your year.
+      </div>
+    </div>
+  );
+}
+
+// 3 — First Moment
+function CardFirstMoment({ active }) {
+  const { firstEventName, firstEventShort, firstEventVenue, eventsAttended } = DATA.student;
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#150428 0%,#2A0F4A 100%)',color:'#fff'}}>
+      <Spark size={14} color="#FFB627" style={{position:'absolute',top:116,left:50}}/>
+      <Spark size={20} color="#FF2E93" style={{position:'absolute',top:156,right:30}}/>
+      <Spark size={16} color="#29D69A" style={{position:'absolute',bottom:180,left:30}}/>
+
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise" style={{color:'#FFB627'}}>02 · First Moment</div>
+        <h1 className="anim-rise" style={{fontSize:38,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>It started<br/>with…</h1>
+      </div>
+
+      <div className="anim-pop" style={{position:'absolute',top:'38%',left:'50%',transform:'translate(-50%,-50%) rotate(-5deg)','--rot':'-5deg',animationDelay:'220ms',width:320}}>
+        <div style={{background:'linear-gradient(180deg,#FFF4E5 0%,#FFD9A6 100%)',borderRadius:20,padding:'20px 24px 24px',color:'#150428',position:'relative',boxShadow:'var(--shadow-pop)',border:'3px solid #150428'}}>
+          <div style={{position:'absolute',top:'60%',left:-10,width:20,height:20,background:'#150428',borderRadius:999}}/>
+          <div style={{position:'absolute',top:'60%',right:-10,width:20,height:20,background:'#150428',borderRadius:999}}/>
+          <div style={{position:'absolute',top:'63%',left:16,right:16,borderTop:'2px dashed #150428'}}/>
+
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+            <span style={{fontFamily:'var(--font-display)',fontWeight:900,fontSize:12,letterSpacing:'.18em'}}>ADMIT ONE</span>
+            <span style={{fontFamily:'var(--font-mono)',fontSize:11,fontWeight:700,background:'#150428',color:'#FFB627',padding:'3px 8px',borderRadius:4}}>#001</span>
+          </div>
+          <div style={{fontFamily:'var(--font-display)',fontSize:30,fontWeight:800,lineHeight:1,letterSpacing:'-.02em'}}>{firstEventName}</div>
+          <div style={{marginTop:28,display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+            <div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.6,letterSpacing:'.1em'}}>DATE</div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22,letterSpacing:'-.02em'}}>{firstEventShort}</div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.6,letterSpacing:'.1em'}}>VENUE</div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:14}}>{firstEventVenue}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="anim-pop" style={{position:'absolute',top:'32%',right:14,zIndex:6,'--rot':'12deg',animationDelay:'500ms',transform:'rotate(12deg)'}}>
+        <div style={{border:'3px solid #FF2E93',color:'#FF2E93',fontFamily:'var(--font-display)',fontWeight:900,fontSize:13,letterSpacing:'.1em',padding:'8px 12px',borderRadius:6,background:'rgba(255,46,147,.08)'}}>★ FIRST<br/>MOMENT</div>
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'700ms',opacity:.85,fontSize:15}}>
+        {DATA.student.firstEventDate} — your first JSU moment of the year. Then {eventsAttended - 1} more.
+      </div>
+    </div>
+  );
+}
+
+// 4 — Streak
+function CardStreak({ active }) {
+  const { longestStreak } = DATA.student;
+  return (
+    <div className="card" style={{background:'radial-gradient(120% 80% at 50% 100%,#FFB627 0%,#FF6B4A 40%,#FF2E93 75%,#6A2BFF 100%)',color:'#fff'}}>
+      <Confetti density={18} seed={4}/>
+
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise">03 · Streak</div>
+        <h1 className="anim-rise" style={{fontSize:40,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>Your longest<br/>streak hit</h1>
+      </div>
+
+      <div className="anim-pop" style={{position:'absolute',top:'34%',left:0,right:0,display:'flex',justifyContent:'center',alignItems:'center',animationDelay:'180ms'}}>
+        <div style={{position:'relative',width:280,height:240}}>
+          <svg width="240" height="240" viewBox="0 0 100 100" style={{position:'absolute',left:20,top:0}} className="anim-flicker">
+            <defs><linearGradient id="flameG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#FFB627"/><stop offset=".5" stopColor="#FF6B4A"/><stop offset="1" stopColor="#FF2E93"/></linearGradient></defs>
+            <path fill="url(#flameG)" stroke="#150428" strokeWidth="2.5" strokeLinejoin="round" d="M50 5 C 65 25,75 35,75 55 C 75 80,60 92,50 92 C 40 92,25 80,25 55 C 25 40,35 30,40 22 C 42 30,48 35,50 35 C 50 25,48 15,50 5 Z"/>
+            <path fill="#FFE08A" d="M50 35 C 56 45,60 52,60 65 C 60 78,54 86,50 86 C 46 86,40 78,40 65 C 40 55,46 48,50 35 Z" opacity=".9"/>
+          </svg>
+          <div style={{position:'absolute',top:'38%',left:0,right:0,textAlign:'center',zIndex:2}}>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:130,lineHeight:1,letterSpacing:'-.05em',color:'#150428',textShadow:'0 4px 0 rgba(255,255,255,.4)'}}>
+              <CountUp to={longestStreak} duration={900} trigger={active?1:0}/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{position:'absolute',bottom:150,left:28,right:28,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{position:'absolute',left:28,right:28,height:4,background:'rgba(255,255,255,.4)',borderRadius:99,top:'50%',transform:'translateY(-50%)'}}/>
+        {Array.from({length:longestStreak}).map((_,i) => (
+          <div key={i} className="anim-pop" style={{position:'relative',zIndex:2,width:38,height:38,borderRadius:999,background:'#fff',border:'3px solid #150428',display:'grid',placeItems:'center',fontFamily:'var(--font-display)',fontWeight:900,color:'#150428',animationDelay:`${300+i*120}ms`,'--rot':'0deg',boxShadow:'0 2px 0 #150428,0 0 0 6px rgba(255,255,255,.25)'}}>✓</div>
+        ))}
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'700ms',textAlign:'center',fontWeight:700,fontSize:16}}>
+        events in a row.<br/>
+        <span style={{fontFamily:'var(--font-marker)',fontWeight:700,fontSize:26}}>That's not just attendance — that's momentum.</span>
+      </div>
+    </div>
+  );
+}
+
+// 5 — Top Vibe
+function CardVibe({ active }) {
+  const { topVibe } = DATA.student;
+  const [line1, line2] = topVibe.includes('+') ? topVibe.split('+').map(s => s.trim()) : [topVibe, ''];
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#29D69A 0%,#00C2FF 60%,#6A2BFF 100%)',color:'#150428'}}>
+      <Star size={26} color="#FFB627" style={{position:'absolute',top:110,right:32,transform:'rotate(15deg)'}}/>
+
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise" style={{color:'#150428'}}>04 · Vibe</div>
+        <h1 className="anim-rise" style={{fontSize:38,lineHeight:.95,marginTop:10,color:'#fff',animationDelay:'80ms'}}>Your top<br/>vibe was…</h1>
+      </div>
+
+      <div className="anim-pop" style={{position:'absolute',top:'34%',left:'50%',transform:'translate(-50%,-50%) rotate(-4deg)','--rot':'-4deg',animationDelay:'200ms'}}>
+        <div style={{background:'#fff',border:'4px solid #150428',borderRadius:28,padding:'24px 28px',boxShadow:'8px 8px 0 #150428',textAlign:'center'}}>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:'.2em',fontWeight:700,color:'#6A2BFF',marginBottom:8}}>★ #1 PROGRAM TYPE ★</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:32,lineHeight:.95,letterSpacing:'-.02em'}}>
+            {line1}<br/>{line2 && <><span style={{fontStyle:'italic',color:'#FF2E93'}}>+ {line2}</span></>}
+          </div>
+        </div>
+      </div>
+
+      <div style={{position:'absolute',bottom:150,left:28,right:28,display:'flex',justifyContent:'center',gap:16}}>
+        {[{label:'Bagels',d:'M50 25 a25 25 0 1 0 0.001 0 z M50 35 a15 15 0 1 0 0.001 0 z',fill:'#FFB627'},{label:'Songs',d:'M30 70 v-45 l30 -8 v45 M30 70 a7 7 0 1 0 0 1 z M60 62 a7 7 0 1 0 0 1 z',fill:'#FF2E93'},{label:'Candles',d:'M40 80 v-40 M50 80 v-50 M60 80 v-40 M28 80 h44',fill:'#29D69A'},{label:'Friends',d:'M35 50 a10 10 0 1 0 0 0.1 z M65 50 a10 10 0 1 0 0 0.1 z M20 80 a15 15 0 0 1 30 0 M50 80 a15 15 0 0 1 30 0',fill:'#6A2BFF'}].map((it,i) => (
+          <div key={i} className="anim-pop" style={{animationDelay:`${400+i*100}ms`,'--rot':`${(i%2===0?-1:1)*6}deg`,transform:`rotate(${(i%2===0?-1:1)*6}deg)`,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+            <div style={{width:56,height:56,borderRadius:18,background:it.fill,border:'3px solid #150428',boxShadow:'3px 3px 0 #150428',display:'grid',placeItems:'center'}}>
+              <svg viewBox="0 0 100 100" width="34" height="34"><path d={it.d} fill="none" stroke="#150428" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div style={{fontSize:11,fontWeight:700,color:'#fff'}}>{it.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,color:'#150428',animationDelay:'800ms',fontWeight:600}}>
+        You kept showing up where friends, food, and Jewish life came together.
+      </div>
+    </div>
+  );
+}
+
+// 6 — Connector
+function CardConnection({ active }) {
+  const { name, friendsBrought, schoolsInRoom, persona } = DATA.student;
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#FF2E93 0%,#B721FF 100%)',color:'#fff'}}>
+      <Confetti density={14} seed={6}/>
+
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise">05 · Persona</div>
+        <h1 className="anim-rise" style={{fontSize:36,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>
+          You're a<br/>
+          <span style={{display:'inline-block',background:'#FFB627',color:'#150428',padding:'2px 12px',borderRadius:10,fontStyle:'italic',transform:'rotate(-2deg)',marginTop:6}}>{persona}.</span>
+        </h1>
+      </div>
+
+      <div style={{position:'absolute',top:'32%',left:0,right:0,height:280,display:'flex',justifyContent:'center'}}>
+        <svg width="320" height="280" viewBox="0 0 320 280">
+          {[[160,140,60,60],[160,140,260,70],[160,140,50,200],[160,140,270,210],[160,140,160,30],[160,140,160,250]].map((c,i) => (
+            <line key={i} x1={c[0]} y1={c[1]} x2={c[2]} y2={c[3]} stroke="#fff" strokeWidth="2" strokeDasharray="4 4" opacity=".5"/>
+          ))}
+          {[[60,60,'#FFB627','S'],[260,70,'#29D69A','J'],[50,200,'#00C2FF','A'],[270,210,'#FFB627','M'],[160,30,'#29D69A','+'],[160,250,'#00C2FF','+']].map((n,i) => (
+            <g key={i} className="anim-pop" style={{animationDelay:`${300+i*80}ms`,transformOrigin:`${n[0]}px ${n[1]}px`}}>
+              <circle cx={n[0]} cy={n[1]} r="22" fill={n[2]} stroke="#150428" strokeWidth="2.5"/>
+              <text x={n[0]} y={n[1]+6} textAnchor="middle" fontFamily="var(--font-display)" fontWeight="900" fontSize="16" fill="#150428">{n[3]}</text>
+            </g>
+          ))}
+          <circle cx="160" cy="140" r="40" fill="none" stroke="#fff" strokeWidth="2" opacity=".6"><animate attributeName="r" from="40" to="100" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from=".7" to="0" dur="2s" repeatCount="indefinite"/></circle>
+          <g className="anim-pop" style={{animationDelay:'200ms',transformOrigin:'160px 140px'}}>
+            <circle cx="160" cy="140" r="46" fill="#150428" stroke="#FFB627" strokeWidth="3"/>
+            <text x="160" y="135" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="900" fontSize="20" fill="#FFB627">{name.toUpperCase()}</text>
+            <text x="160" y="156" textAnchor="middle" fontFamily="var(--font-body)" fontWeight="700" fontSize="11" fill="#fff">you</text>
+          </g>
+        </svg>
+      </div>
+
+      <div style={{position:'absolute',bottom:130,left:28,right:28,display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <div className="anim-rise" style={{background:'rgba(255,255,255,.15)',backdropFilter:'blur(8px)',border:'1.5px solid rgba(255,255,255,.4)',borderRadius:14,padding:'10px 14px',animationDelay:'600ms'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:32,lineHeight:1}}>+{friendsBrought}</div>
+          <div style={{fontSize:11,fontWeight:600,opacity:.9}}>friends brought</div>
+        </div>
+        <div className="anim-rise" style={{background:'rgba(255,255,255,.15)',backdropFilter:'blur(8px)',border:'1.5px solid rgba(255,255,255,.4)',borderRadius:14,padding:'10px 14px',animationDelay:'700ms'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:32,lineHeight:1}}>{schoolsInRoom}</div>
+          <div style={{fontSize:11,fontWeight:600,opacity:.9}}>schools in your room</div>
+        </div>
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'800ms',fontWeight:600}}>
+        {DATA.student.personaLine}
+      </div>
+    </div>
+  );
+}
+
+// 7 — Depth
+function CardExperience({ active }) {
+  const { shabbatons, learningSessions, leadershipMoments } = DATA.student;
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#150428 0%,#2A0F4A 50%,#4A1A6E 100%)',color:'#fff',padding:0}}>
+      <div style={{position:'absolute',top:96,left:28,right:28,zIndex:10}}>
+        <div className="eyebrow anim-rise" style={{color:'#FFB627'}}>06 · Depth</div>
+        <h1 className="anim-rise" style={{fontSize:32,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>You made room<br/>for the deeper<br/>moments too.</h1>
+      </div>
+
+      <div style={{position:'absolute',top:240,left:24,right:24,bottom:130,display:'flex',flexDirection:'column',gap:14}}>
+        <div className="anim-rise" style={{flex:1,background:'linear-gradient(135deg,#FF6B4A 0%,#FF2E93 100%)',borderRadius:22,padding:'20px 22px',position:'relative',overflow:'hidden',border:'2px solid rgba(255,255,255,.15)',animationDelay:'180ms'}}>
+          <svg width="120" height="120" viewBox="0 0 100 100" style={{position:'absolute',right:-10,bottom:-10,opacity:.85}}>
+            <ellipse cx="35" cy="20" rx="4" ry="7" fill="#FFB627" className="anim-flicker"/>
+            <ellipse cx="65" cy="20" rx="4" ry="7" fill="#FFB627" className="anim-flicker"/>
+            <rect x="32" y="25" width="6" height="50" fill="#FFF4E5" stroke="#150428" strokeWidth="1.5"/>
+            <rect x="62" y="25" width="6" height="50" fill="#FFF4E5" stroke="#150428" strokeWidth="1.5"/>
+            <rect x="20" y="75" width="60" height="10" rx="3" fill="#FFB627" stroke="#150428" strokeWidth="2"/>
+          </svg>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:'.16em',fontWeight:700,opacity:.9}}>SHABBATONS</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:88,lineHeight:.9,marginTop:4}}>
+            <CountUp to={shabbatons} duration={700} trigger={active?1:0}/>
+          </div>
+          <div style={{fontFamily:'var(--font-marker)',fontSize:22,marginTop:-2}}>weekends away</div>
+        </div>
+
+        <div className="anim-rise" style={{flex:1,background:'linear-gradient(135deg,#29D69A 0%,#00C2FF 100%)',color:'#150428',borderRadius:22,padding:'20px 22px',position:'relative',overflow:'hidden',border:'2px solid rgba(0,0,0,.1)',animationDelay:'320ms'}}>
+          <svg width="130" height="130" viewBox="0 0 100 100" style={{position:'absolute',right:-8,bottom:-16,opacity:.9}}>
+            <rect x="18" y="25" width="32" height="50" rx="3" fill="#fff" stroke="#150428" strokeWidth="2"/>
+            <rect x="48" y="25" width="32" height="50" rx="3" fill="#FFB627" stroke="#150428" strokeWidth="2"/>
+            <line x1="50" y1="25" x2="50" y2="75" stroke="#150428" strokeWidth="2"/>
+            <line x1="24" y1="35" x2="44" y2="35" stroke="#150428" strokeWidth="1.5"/>
+            <line x1="24" y1="42" x2="44" y2="42" stroke="#150428" strokeWidth="1.5"/>
+            <line x1="54" y1="35" x2="74" y2="35" stroke="#150428" strokeWidth="1.5"/>
+            <line x1="54" y1="42" x2="74" y2="42" stroke="#150428" strokeWidth="1.5"/>
+          </svg>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:'.16em',fontWeight:700,opacity:.7}}>LEARNING SESSIONS</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:88,lineHeight:.9,marginTop:4}}>
+            <CountUp to={learningSessions} duration={700} trigger={active?1:0}/>
+          </div>
+          <div style={{fontFamily:'var(--font-marker)',fontSize:22,marginTop:-2}}>sessions deep</div>
+        </div>
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'700ms',opacity:.9}}>
+        Plus {leadershipMoments} leadership moments along the way.
+      </div>
+    </div>
+  );
+}
+
+// 8 — Chapter Recap
+function CardChapter({ active }) {
+  const c = DATA.chapter;
+  const stats = [
+    { n: c.events,       label:'events hosted',       color:'#FF2E93' },
+    { n: c.uniqueTeens,  label:'unique teens',         color:'#6A2BFF' },
+    { n: c.totalMoments, label:'attendance moments',   color:'#FFB627', big:true },
+    { n: c.newTeens,     label:'new this year',        color:'#29D69A' },
+  ];
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#FFF4E5 0%,#FFD9A6 100%)',color:'#150428'}}>
+      <svg style={{position:'absolute',inset:0,opacity:.18}} width="100%" height="100%">
+        <defs><pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="#150428"/></pattern></defs>
+        <rect width="100%" height="100%" fill="url(#dots)"/>
+      </svg>
+
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise" style={{color:'#6A2BFF'}}>07 · Your Club</div>
+        <h1 className="anim-rise" style={{fontSize:36,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>
+          {c.name} had a
+          <span style={{display:'inline-block',marginLeft:6,background:'#FF2E93',color:'#fff',padding:'0 10px',borderRadius:8,transform:'rotate(-2deg)',fontStyle:'italic'}}>big</span><br/>year.
+        </h1>
+      </div>
+
+      <div style={{position:'absolute',top:260,left:24,right:24,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {stats.map((s,i) => (
+          <div key={i} className="anim-pop" style={{background:'#fff',borderRadius:18,padding:'14px 16px',border:'2.5px solid #150428',boxShadow:'3px 3px 0 #150428',gridColumn:s.big?'span 2':'auto',animationDelay:`${250+i*100}ms`,'--rot':`${(i%2===0?-1:1)*1.5}deg`,transform:`rotate(${(i%2===0?-1:1)*1.5}deg)`}}>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:s.big?64:44,lineHeight:1,color:s.color,letterSpacing:'-.03em'}}>
+              <CountUp to={s.n} duration={1100} trigger={active?1:0}/>
+            </div>
+            <div style={{fontSize:12,fontWeight:700,marginTop:2,textTransform:'uppercase',letterSpacing:'.04em'}}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="anim-pop" style={{position:'absolute',bottom:130,left:28,right:28,animationDelay:'800ms','--rot':'-2deg',transform:'rotate(-2deg)'}}>
+        <div style={{background:'#150428',color:'#FFB627',borderRadius:14,padding:'12px 16px',display:'flex',alignItems:'center',gap:12}}>
+          <svg width="40" height="40" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="18" fill="#FFB627" stroke="#fff" strokeWidth="2"/>
+            <path d="M12 22 a8 8 0 0 0 16 0" stroke="#150428" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+            <circle cx="15" cy="17" r="1.5" fill="#150428"/><circle cx="25" cy="17" r="1.5" fill="#150428"/>
+          </svg>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:10,letterSpacing:'.16em',opacity:.8}}>CHAPTER PERSONA</div>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:20,lineHeight:1,color:'#fff'}}>{c.persona}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',fontSize:13,opacity:.75}}>
+        Biggest night: {c.biggestEvent} · {c.biggestEventAttendance} teens · Most active month: {c.busiestMonth}
+      </div>
+    </div>
+  );
+}
+
+// 9 — Bigger Movement
+function CardMovement({ active }) {
+  const dots = [];
+  for (let ring = 0; ring < 5; ring++) {
+    const count = 8+ring*6, r = 40+ring*28;
+    for (let i = 0; i < count; i++) {
+      const angle = (i/count)*Math.PI*2;
+      dots.push({x:160+Math.cos(angle)*r,y:160+Math.sin(angle)*r,delay:200+ring*80+i*8,color:['#FFB627','#FF2E93','#6A2BFF','#00C2FF','#29D69A'][ring],size:6-ring*.5});
+    }
+  }
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#150428 0%,#321560 100%)',color:'#fff'}}>
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise" style={{color:'#FFB627'}}>08 · Zoom Out</div>
+        <h1 className="anim-rise" style={{fontSize:32,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>
+          You were part of<br/>something
+          <span style={{background:'linear-gradient(90deg,#FF2E93,#FFB627)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontStyle:'italic'}}> much bigger.</span>
+        </h1>
+      </div>
+
+      <div style={{position:'absolute',top:220,left:'50%',transform:'translateX(-50%)',width:320,height:320}}>
+        <svg width="320" height="320" viewBox="0 0 320 320">
+          {dots.map((d,i) => (
+            <circle key={i} cx={d.x} cy={d.y} r={d.size} fill={d.color} opacity=".85">
+              <animate attributeName="opacity" values="0;0.85;0.85" dur="1s" begin={`${d.delay}ms`} fill="freeze"/>
+            </circle>
+          ))}
+          <g className="anim-pop" style={{animationDelay:'100ms',transformOrigin:'160px 160px'}}>
+            <circle cx="160" cy="160" r="32" fill="#FFB627" stroke="#150428" strokeWidth="3"/>
+            <text x="160" y="158" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="900" fontSize="11" fill="#150428">YOU</text>
+            <text x="160" y="172" textAnchor="middle" fontFamily="var(--font-body)" fontWeight="700" fontSize="9" fill="#150428">are here</text>
+          </g>
+        </svg>
+      </div>
+
+      <div style={{position:'absolute',top:240,left:8,zIndex:5}} className="anim-rise">
+        <div style={{background:'#FF2E93',border:'2px solid #fff',borderRadius:12,padding:'6px 10px',transform:'rotate(-6deg)'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:900,fontSize:22,lineHeight:1}}>{DATA.regional.teens.toLocaleString()}</div>
+          <div style={{fontSize:9,fontWeight:700,opacity:.9}}>TEENS · {DATA.regional.name.split(' ')[0].toUpperCase()}</div>
+        </div>
+      </div>
+      <div style={{position:'absolute',top:260,right:10,zIndex:5}} className="anim-rise">
+        <div style={{background:'#29D69A',color:'#150428',border:'2px solid #fff',borderRadius:12,padding:'6px 10px',transform:'rotate(5deg)',animationDelay:'200ms'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:900,fontSize:22,lineHeight:1}}>{DATA.regional.schools}</div>
+          <div style={{fontSize:9,fontWeight:700}}>SCHOOLS</div>
+        </div>
+      </div>
+      <div style={{position:'absolute',top:470,left:'50%',transform:'translateX(-50%) rotate(-3deg)',zIndex:5}} className="anim-rise">
+        <div style={{background:'#FFB627',color:'#150428',border:'2px solid #fff',borderRadius:12,padding:'8px 12px',animationDelay:'400ms'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:900,fontSize:28,lineHeight:1}}>{(DATA.national.moments/1000).toFixed(0)}k+</div>
+          <div style={{fontSize:10,fontWeight:700}}>NATIONAL ENGAGEMENT MOMENTS</div>
+        </div>
+      </div>
+
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',textAlign:'center',fontWeight:600}}>
+        One club. One region. <span className="marker" style={{fontSize:22,color:'#FFB627'}}>One national movement.</span>
+      </div>
+    </div>
+  );
+}
+
+// 10 — Share Card
+function CardShare({ active }) {
+  const s = DATA.student;
+  const shareStats = [
+    { n: String(s.eventsAttended), label:'events showed up to', c:'#FF2E93' },
+    { n: String(s.longestStreak),  label:'event streak',        c:'#FFB627' },
+    { n: String(s.friendsBrought), label:'friends brought',     c:'#29D69A' },
+    { n: String(s.schoolsInRoom),  label:'schools in your room',c:'#00C2FF' },
+  ];
+  return (
+    <div className="card" style={{background:'linear-gradient(165deg,#6A2BFF 0%,#FF2E93 60%,#FFB627 100%)',color:'#fff',padding:0}}>
+      <Confetti density={22} seed={10}/>
+      <div className="anim-pop" style={{position:'absolute',top:90,left:26,right:26,bottom:160,background:'#150428',borderRadius:28,padding:24,color:'#fff',border:'3px solid #fff',boxShadow:'0 30px 60px rgba(0,0,0,.4)',display:'flex',flexDirection:'column',animationDelay:'120ms'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#FFB627',color:'#150428',display:'grid',placeItems:'center',fontFamily:'var(--font-display)',fontWeight:900,fontSize:12}}>JSU</div>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:12,letterSpacing:'.04em'}}>NCSY · JSU</div>
+          </div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.6,letterSpacing:'.1em'}}>'25 · '26</div>
+        </div>
+        <div style={{marginTop:18}}>
+          <div style={{fontFamily:'var(--font-marker)',fontSize:28,color:'#FFB627',lineHeight:1}}>my JSU year:</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:52,lineHeight:.9,letterSpacing:'-.02em',marginTop:4,fontStyle:'italic'}}>wrapped.</div>
+        </div>
+        <div style={{marginTop:18,display:'flex',flexDirection:'column',gap:10,flex:1}}>
+          {shareStats.map((st,i) => (
+            <div key={i} style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',borderBottom:'1px dashed rgba(255,255,255,.18)',paddingBottom:6}}>
+              <span style={{fontSize:12,fontWeight:600,opacity:.8,textTransform:'uppercase',letterSpacing:'.08em'}}>{st.label}</span>
+              <span style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:32,color:st.c,letterSpacing:'-.03em'}}>{st.n}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:8,background:'linear-gradient(90deg,#FFB627,#FF2E93)',color:'#150428',borderRadius:12,padding:'10px 14px',display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontFamily:'var(--font-mono)',fontSize:10,fontWeight:700,letterSpacing:'.16em'}}>PERSONA</span>
+          <span style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:18,fontStyle:'italic'}}>{s.persona} ✦</span>
+        </div>
+        <div style={{marginTop:12,fontSize:11,opacity:.6,fontFamily:'var(--font-mono)',textAlign:'center',letterSpacing:'.1em'}}>
+          {s.name.toUpperCase()} · {s.chapter.toUpperCase()} · {s.region.toUpperCase()}
+        </div>
+      </div>
+      <div className="anim-rise" style={{position:'absolute',bottom:60,left:24,right:24,display:'flex',gap:8,animationDelay:'300ms'}}>
+        <button className="cta cta-light" style={{flex:1}} onClick={() => navigator.share && navigator.share({title:'My JSU Year',text:`${s.eventsAttended} events. ${s.longestStreak}-event streak. ${s.persona}.`,url:location.href}).catch(()=>{})}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8a3 3 0 1 0-2.83-4M6 12a3 3 0 1 0 0 0M18 19a3 3 0 1 0-2.83-4M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Share
+        </button>
+        <button className="cta cta-dark" style={{flex:1}} onClick={() => window.print()}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   CHAPTER CARDS  (10 slides, collective "we" voice)
+   ============================================================ */
+
+// C1 — Chapter Cover
+function ChapCover({ active }) {
+  const c = DATA.chapter;
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#150428 0%,#6A2BFF 50%,#FF2E93 100%)',color:'#fff'}}>
+      <Confetti density={30} seed={11}/>
+      <Star size={32} color="#FFB627" style={{position:'absolute',top:150,right:30,animation:'spin-slow 9s linear infinite',zIndex:5}}/>
+      <Star size={18} color="#29D69A" style={{position:'absolute',top:240,left:40,animation:'drift 3s ease-in-out infinite',zIndex:5}}/>
+
+      <div className="anim-pop" style={{position:'absolute',top:130,left:26,zIndex:6,animationDelay:'200ms',transform:'rotate(-6deg)'}}>
+        <div style={{background:'#FFB627',color:'#150428',padding:'4px 18px 4px 10px',fontFamily:'var(--font-display)',fontWeight:900,fontSize:11,letterSpacing:'.16em',clipPath:'polygon(0 0,100% 0,90% 50%,100% 100%,0 100%)',border:'2px solid #150428'}}>★ {c.school.split(' ').slice(0,2).join(' ').toUpperCase()}</div>
+      </div>
+
+      <div style={{position:'absolute',left:26,right:26,top:'40%',zIndex:5,transform:'translateY(-50%)'}}>
+        <div className="eyebrow anim-rise" style={{marginBottom:12,fontSize:13,color:'#FFB627'}}>✦ OUR YEAR · {DATA.year} ✦</div>
+        <h1 className="anim-rise" style={{fontSize:80,lineHeight:.86,textShadow:'4px 4px 0 rgba(0,0,0,.18)',animationDelay:'120ms'}}>
+          <span style={{fontStyle:'italic',fontWeight:700}}>we are</span><br/>
+          <span style={{fontSize:96}}>{c.name.split(' ')[0]}<br/>{c.name.split(' ').slice(1).join(' ')}.</span>
+        </h1>
+      </div>
+
+      <div className="anim-rise" style={{position:'absolute',left:28,right:28,bottom:110,zIndex:5,animationDelay:'320ms'}}>
+        <div style={{fontFamily:'var(--font-marker)',fontSize:30,lineHeight:1,marginBottom:4,color:'#FFB627'}}>and this is our year.</div>
+        <div style={{fontSize:13,opacity:.85,fontWeight:600}}>{c.region} · {DATA.year}</div>
+      </div>
+
+      <div style={{position:'absolute',bottom:60,left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:6,zIndex:5}}>
+        <span style={{fontFamily:'var(--font-marker)',fontSize:22,color:'#fff',animation:'blink 1.5s ease-in-out infinite'}}>tap to start →</span>
+      </div>
+    </div>
+  );
+}
+
+// C2 — Events
+function ChapEvents({ active }) {
+  const { events, name } = DATA.chapter;
+  const evArr = Array.from({ length: events });
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#FFF4E5 0%,#FFCFA0 100%)'}}>
+      <Star size={28} color="#FF2E93" style={{position:'absolute',top:130,right:32,transform:'rotate(15deg)'}}/>
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise" style={{color:'#6A2BFF'}}>01 · We Did The Thing</div>
+        <h1 className="anim-rise" style={{fontSize:38,marginTop:12,lineHeight:.95,animationDelay:'80ms'}}>
+          We pulled off <span className="marker" style={{color:'#FF2E93',fontSize:42}}>this many</span> programs.
+        </h1>
+      </div>
+      <div className="anim-pop" style={{position:'absolute',top:'44%',left:0,right:0,display:'flex',justifyContent:'center',animationDelay:'200ms'}}>
+        <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:260,lineHeight:.8,letterSpacing:'-.06em',background:'linear-gradient(180deg,#FF2E93 0%,#6A2BFF 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+          <CountUp to={events} duration={1300} trigger={active?1:0}/>
+        </div>
+      </div>
+      <div style={{position:'absolute',bottom:130,left:28,right:28,display:'grid',gridTemplateColumns:'repeat(19,1fr)',gap:3}}>
+        {evArr.map((_,i) => (
+          <div key={i} style={{aspectRatio:'1',borderRadius:3,background:['#FF2E93','#FFB627','#6A2BFF','#29D69A','#FF6B4A'][i%5],opacity:.85,animation:'rise 600ms both',animationDelay:`${300+i*12}ms`}}/>
+        ))}
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms'}}>
+        Lunch tables, BBQs, Shabbatons, late-night learning. We showed up for all of it.
+      </div>
+    </div>
+  );
+}
+
+// C3 — Reach
+function ChapReach({ active }) {
+  const { uniqueTeens, returningTeens, newTeens } = DATA.chapter;
+  const dots = Array.from({ length: uniqueTeens });
+  return (
+    <div className="card" style={{background:'linear-gradient(165deg,#29D69A 0%,#00C2FF 100%)',color:'#150428'}}>
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise" style={{color:'#150428'}}>02 · Us</div>
+        <h1 className="anim-rise" style={{fontSize:36,lineHeight:.95,marginTop:10,color:'#fff',animationDelay:'80ms'}}>
+          That's<br/>
+          <span style={{display:'inline-block',background:'#150428',color:'#FFB627',padding:'0 12px',borderRadius:10,transform:'rotate(-2deg)',fontStyle:'italic',marginTop:4}}>{uniqueTeens} of us.</span>
+        </h1>
+      </div>
+      <div style={{position:'absolute',top:260,left:28,right:28,bottom:200,display:'grid',gridTemplateColumns:'repeat(14,1fr)',gap:4,alignContent:'start'}}>
+        {dots.map((_,i) => (
+          <div key={i} style={{aspectRatio:'1',borderRadius:999,background:i<returningTeens?'#150428':'#FFB627',border:'1.5px solid #150428',animation:'pop-in 400ms both',animationDelay:`${i*6}ms`}}/>
+        ))}
+      </div>
+      <div style={{position:'absolute',bottom:130,left:28,right:28,display:'flex',gap:14,fontSize:12,fontWeight:700}}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:12,height:12,borderRadius:999,background:'#150428',display:'block'}}/>{returningTeens} ride-or-die</div>
+        <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:12,height:12,borderRadius:999,background:'#FFB627',border:'1.5px solid #150428',display:'block'}}/>{newTeens} first-timers</div>
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',fontWeight:600,color:'#150428'}}>
+        Every dot is someone you've sat across a table from this year.
+      </div>
+    </div>
+  );
+}
+
+// C4 — Moments
+function ChapMoments({ active }) {
+  const { totalMoments } = DATA.chapter;
+  return (
+    <div className="card" style={{background:'linear-gradient(165deg,#6A2BFF 0%,#FF2E93 60%,#FFB627 100%)',color:'#fff'}}>
+      <Confetti density={20} seed={14}/>
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise">03 · Together</div>
+        <h1 className="anim-rise" style={{fontSize:32,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>Together we made…</h1>
+      </div>
+      <div className="anim-pop" style={{position:'absolute',top:'48%',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',animationDelay:'180ms',transform:'translateY(-50%)'}}>
+        <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:130,lineHeight:.85,letterSpacing:'-.05em',color:'#fff',textShadow:'0 6px 0 rgba(21,4,40,.25)',fontStyle:'italic'}}>
+          <CountUp to={totalMoments} duration={1600} trigger={active?1:0}/>
+        </div>
+        <div style={{fontFamily:'var(--font-marker)',fontSize:36,color:'#150428',background:'#FFB627',padding:'4px 18px',borderRadius:12,transform:'rotate(-2deg)',marginTop:-6,border:'3px solid #150428'}}>moments together</div>
+      </div>
+      <div style={{position:'absolute',bottom:160,left:28,right:28,height:60}}>
+        <svg viewBox="0 0 320 60" width="100%" height="100%">
+          {Array.from({length:64}).map((_,i) => {
+            const h = 8+Math.abs(Math.sin(i*.4)*22+Math.cos(i*.7)*12);
+            return <rect key={i} x={i*5+2} y={30-h/2} width="3" height={h} rx="1.5" fill="#fff" opacity=".7"/>;
+          })}
+        </svg>
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',textAlign:'center',fontWeight:600}}>
+        Every check-in. Every late night. Every "you coming?" text answered yes.
+      </div>
+    </div>
+  );
+}
+
+// C5 — New teens
+function ChapNew({ active }) {
+  const { newTeens } = DATA.chapter;
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#FFF4E5 0%,#FFB627 100%)',color:'#150428'}}>
+      <Squiggle color="rgba(255,46,147,.4)" width={140} style={{position:'absolute',top:130,right:16}}/>
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise" style={{color:'#6A2BFF'}}>04 · The New Crew</div>
+        <h1 className="anim-rise" style={{fontSize:36,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>
+          <span style={{color:'#FF2E93',fontStyle:'italic'}}>{newTeens} new<br/>people</span> found us.
+        </h1>
+      </div>
+      <div className="anim-pop" style={{position:'absolute',top:'40%',left:'50%',transform:'translate(-50%,-50%) rotate(-3deg)',animationDelay:'220ms'}}>
+        <div style={{background:'#fff',border:'3px solid #150428',borderRadius:24,padding:'22px 28px',boxShadow:'6px 6px 0 #150428',textAlign:'center'}}>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:'.18em',fontWeight:700,color:'#6A2BFF',marginBottom:6}}>★ NEW THIS YEAR ★</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:130,lineHeight:.85,letterSpacing:'-.05em',background:'linear-gradient(180deg,#FF2E93,#6A2BFF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+            <CountUp to={newTeens} duration={1400} trigger={active?1:0}/>
+          </div>
+          <div style={{fontFamily:'var(--font-marker)',fontSize:26,marginTop:-4}}>walked in for the first time</div>
+        </div>
+      </div>
+      <div style={{position:'absolute',bottom:140,left:28,right:28,display:'grid',gridTemplateColumns:'repeat(20,1fr)',gap:3}}>
+        {Array.from({length:newTeens}).map((_,i) => (
+          <div key={i} style={{width:'100%',aspectRatio:'.8',background:['#FF2E93','#FFB627','#6A2BFF','#29D69A'][i%4],borderRadius:'50% 50% 30% 30%',border:'1px solid #150428',animation:'pop-in 400ms both',animationDelay:`${300+i*18}ms`}}/>
+        ))}
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',fontWeight:600}}>
+        Shoutout to whoever brought them. The room got bigger because of you.
+      </div>
+    </div>
+  );
+}
+
+// C6 — Retention donut
+function ChapRetention({ active }) {
+  const { repeatRate, returningTeens, avgEventsPerPerson } = DATA.chapter;
+  const r = 90, circ = 2*Math.PI*r;
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#150428 0%,#2A0F4A 100%)',color:'#fff'}}>
+      <Spark size={14} color="#FFB627" style={{position:'absolute',top:220,right:50}}/>
+      <Spark size={18} color="#FF2E93" style={{position:'absolute',bottom:250,left:30}}/>
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise" style={{color:'#FFB627'}}>05 · Once Is Never Enough</div>
+        <h1 className="anim-rise" style={{fontSize:36,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>
+          We kept <span style={{fontStyle:'italic',color:'#29D69A'}}>coming<br/>back.</span>
+        </h1>
+      </div>
+      <div className="anim-pop" style={{position:'absolute',top:'52%',left:'50%',transform:'translate(-50%,-50%)',animationDelay:'220ms'}}>
+        <svg width="240" height="240" viewBox="0 0 240 240">
+          <circle cx="120" cy="120" r={r} fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="22"/>
+          <circle cx="120" cy="120" r={r} fill="none" stroke="url(#donutG2)" strokeWidth="22"
+            strokeDasharray={`${circ*repeatRate/100} ${circ}`} strokeLinecap="round"
+            transform="rotate(-90 120 120)"
+            style={{animation:'rise 1200ms ease-out both',animationDelay:'300ms'}}/>
+          <defs><linearGradient id="donutG2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FFB627"/><stop offset="1" stopColor="#FF2E93"/></linearGradient></defs>
+          <text x="120" y="125" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="76" fill="#fff" letterSpacing="-3">
+            <tspan>{repeatRate}</tspan><tspan fontSize="32" baselineShift="super">%</tspan>
+          </text>
+          <text x="120" y="158" textAnchor="middle" fontFamily="var(--font-body)" fontWeight="700" fontSize="11" fill="#FFB627" letterSpacing="2">CAME BACK FOR MORE</text>
+        </svg>
+      </div>
+      <div style={{position:'absolute',bottom:130,left:28,right:28,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        <div className="anim-rise" style={{background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.18)',borderRadius:14,padding:'10px 14px',animationDelay:'600ms'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:28,lineHeight:1,color:'#29D69A'}}>{returningTeens}</div>
+          <div style={{fontSize:11,fontWeight:600,opacity:.8}}>came twice or more</div>
+        </div>
+        <div className="anim-rise" style={{background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.18)',borderRadius:14,padding:'10px 14px',animationDelay:'700ms'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:28,lineHeight:1,color:'#FF2E93'}}>{avgEventsPerPerson}</div>
+          <div style={{fontSize:11,fontWeight:600,opacity:.8}}>events per person, avg</div>
+        </div>
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',textAlign:'center',opacity:.9}}>
+        <span className="marker" style={{fontSize:22,color:'#FFB627'}}>Once is a visit. Twice is a chapter.</span>
+      </div>
+    </div>
+  );
+}
+
+// C7 — Biggest Night
+function ChapBiggest({ active }) {
+  const c = DATA.chapter;
+  return (
+    <div className="card" style={{background:'linear-gradient(160deg,#FF2E93 0%,#B721FF 100%)',color:'#fff'}}>
+      <Confetti density={24} seed={17}/>
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise">06 · The One We'll Remember</div>
+        <h1 className="anim-rise" style={{fontSize:38,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>Our biggest<br/>night was…</h1>
+      </div>
+      <div className="anim-pop" style={{position:'absolute',top:'46%',left:'50%',transform:'translate(-50%,-50%) rotate(-4deg)',animationDelay:'220ms',width:320}}>
+        <div style={{background:'linear-gradient(180deg,#FFB627 0%,#FF6B4A 100%)',borderRadius:20,padding:'20px 24px 24px',color:'#150428',position:'relative',boxShadow:'var(--shadow-pop)',border:'3px solid #150428'}}>
+          <div style={{position:'absolute',top:'60%',left:-10,width:20,height:20,background:'#B721FF',borderRadius:999}}/>
+          <div style={{position:'absolute',top:'60%',right:-10,width:20,height:20,background:'#B721FF',borderRadius:999}}/>
+          <div style={{position:'absolute',top:'63%',left:16,right:16,borderTop:'2px dashed #150428'}}/>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+            <span style={{fontFamily:'var(--font-display)',fontWeight:900,fontSize:12,letterSpacing:'.18em'}}>★ THE BIG ONE</span>
+            <span style={{fontFamily:'var(--font-mono)',fontSize:11,fontWeight:700,background:'#150428',color:'#FFB627',padding:'3px 8px',borderRadius:4}}>{c.biggestEventMonthLabel}</span>
+          </div>
+          <div style={{fontFamily:'var(--font-display)',fontSize:38,fontWeight:800,lineHeight:.95,letterSpacing:'-.02em',fontStyle:'italic'}}>{c.biggestEvent}</div>
+          <div style={{marginTop:24,display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+            <div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.6,letterSpacing:'.1em'}}>SHOWED UP</div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:48,lineHeight:1}}>
+                <CountUp to={c.biggestEventAttendance} duration={900} trigger={active?1:0}/>
+              </div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.6,letterSpacing:'.1em'}}>SCHOOLS</div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22}}>{c.biggestEventSchools}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="anim-rise" style={{position:'absolute',bottom:130,left:28,right:28,animationDelay:'600ms'}}>
+        <div style={{background:'rgba(255,255,255,.15)',backdropFilter:'blur(8px)',border:'1.5px solid rgba(255,255,255,.35)',borderRadius:14,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.8,letterSpacing:'.12em'}}>BUSIEST MONTH</div>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22,lineHeight:1,marginTop:2}}>{c.busiestMonth} was a vibe</div>
+          </div>
+          <div style={{background:'#FFB627',color:'#150428',padding:'6px 12px',borderRadius:999,fontFamily:'var(--font-display)',fontWeight:800,fontSize:14,border:'2px solid #150428'}}>{c.busiestMonthMoments} moments</div>
+        </div>
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',textAlign:'center',opacity:.95,fontWeight:600}}>
+        You were there. You'll tell people about it for years.
+      </div>
+    </div>
+  );
+}
+
+// C8 — Chapter Persona
+function ChapPersona({ active }) {
+  const { persona } = DATA.chapter;
+  return (
+    <div className="card" style={{background:'linear-gradient(165deg,#FFB627 0%,#FF6B4A 50%,#FF2E93 100%)',color:'#150428'}}>
+      <Star size={28} color="#150428" style={{position:'absolute',top:140,left:30,transform:'rotate(-12deg)'}}/>
+      <Star size={22} color="#fff" style={{position:'absolute',top:200,right:36,transform:'rotate(8deg)'}}/>
+      <div style={{position:'absolute',top:108,left:28,right:28}}>
+        <div className="eyebrow anim-rise">07 · Who We Are</div>
+        <h1 className="anim-rise" style={{fontSize:36,lineHeight:.95,marginTop:10,color:'#fff',animationDelay:'80ms'}}>We're the<br/>kind of<br/>chapter that…</h1>
+      </div>
+      <div className="anim-pop" style={{position:'absolute',top:'54%',left:'50%',transform:'translate(-50%,-50%) rotate(-3deg)',animationDelay:'220ms'}}>
+        <div style={{background:'#150428',color:'#FFB627',border:'4px solid #150428',borderRadius:28,padding:'20px 26px 24px',boxShadow:'8px 8px 0 #fff',textAlign:'center',maxWidth:320}}>
+          <svg width="84" height="84" viewBox="0 0 100 100" style={{marginBottom:4}}>
+            <circle cx="50" cy="50" r="44" fill="#FFB627" stroke="#fff" strokeWidth="3"/>
+            <circle cx="36" cy="44" r="3.5" fill="#150428"/><circle cx="64" cy="44" r="3.5" fill="#150428"/>
+            <path d="M30 58 q20 18 40 0" stroke="#150428" strokeWidth="4" fill="none" strokeLinecap="round"/>
+            <path d="M20 28 q8 -10 18 -6" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round"/>
+            <path d="M80 28 q-8 -10 -18 -6" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round"/>
+          </svg>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:'.2em',fontWeight:700,opacity:.9}}>★ BUILDS COMMUNITY ★</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:38,lineHeight:.95,letterSpacing:'-.02em',color:'#fff',fontStyle:'italic',marginTop:4}}>{persona}.</div>
+        </div>
+      </div>
+      <div style={{position:'absolute',bottom:130,left:28,right:28,display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
+        {['high retention','newcomers welcome','consistent rhythm','cross-school energy'].map((tag,i) => (
+          <div key={tag} className="anim-pop" style={{background:'#fff',color:'#150428',border:'2px solid #150428',borderRadius:999,padding:'4px 12px',fontSize:11,fontWeight:700,animationDelay:`${600+i*80}ms`}}>{tag}</div>
+        ))}
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',textAlign:'center',color:'#150428',fontWeight:600}}>
+        Other chapter types: <span style={{opacity:.65}}>Spark Starter · Deep Diver · Glue Crew</span>
+      </div>
+    </div>
+  );
+}
+
+// C9 — Not Alone
+function ChapMovement({ active }) {
+  return (
+    <div className="card" style={{background:'linear-gradient(180deg,#150428 0%,#321560 100%)',color:'#fff'}}>
+      <div style={{position:'absolute',top:108,left:28,right:28,zIndex:5}}>
+        <div className="eyebrow anim-rise" style={{color:'#FFB627'}}>08 · The Bigger Crew</div>
+        <h1 className="anim-rise" style={{fontSize:32,lineHeight:.95,marginTop:10,animationDelay:'80ms'}}>
+          And we're not{' '}
+          <span style={{background:'linear-gradient(90deg,#FF2E93,#FFB627)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontStyle:'italic'}}>alone.</span>
+        </h1>
+      </div>
+      <div style={{position:'absolute',top:250,left:'50%',transform:'translateX(-50%)',width:320,height:320}}>
+        <svg viewBox="0 0 320 320" width="320" height="320">
+          <circle cx="160" cy="160" r="148" fill="none" stroke="#FF2E93" strokeWidth="2" opacity=".4" strokeDasharray="4 4"/>
+          <circle cx="160" cy="160" r="100" fill="none" stroke="#FFB627" strokeWidth="2" opacity=".6" strokeDasharray="4 4"/>
+          <circle cx="160" cy="160" r="48" fill="#29D69A" stroke="#fff" strokeWidth="3"/>
+          <text x="160" y="154" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="900" fontSize="11" fill="#150428">{DATA.chapter.name.split(' ')[0].toUpperCase()}</text>
+          <text x="160" y="166" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="900" fontSize="11" fill="#150428">{DATA.chapter.name.split(' ').slice(1).join(' ').toUpperCase()}</text>
+          <text x="160" y="180" textAnchor="middle" fontFamily="var(--font-body)" fontWeight="700" fontSize="9" fill="#150428">that's us</text>
+          <text x="160" y="55" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="13" fill="#FFB627" letterSpacing="2">OUR REGION</text>
+          <text x="160" y="20" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="13" fill="#FF2E93" letterSpacing="2">THE WHOLE THING</text>
+          {Array.from({length:12}).map((_,i) => { const a=(i/12)*Math.PI*2+.3; return <circle key={i} cx={160+Math.cos(a)*78} cy={160+Math.sin(a)*78} r="6" fill="#FFB627" opacity=".8"/>; })}
+          {Array.from({length:24}).map((_,i) => { const a=(i/24)*Math.PI*2+.5; return <circle key={i} cx={160+Math.cos(a)*130} cy={160+Math.sin(a)*130} r="4" fill="#FF2E93" opacity=".7"/>; })}
+        </svg>
+      </div>
+      <div style={{position:'absolute',bottom:200,left:24,right:24,display:'flex',flexDirection:'column',gap:8}}>
+        <div className="anim-rise" style={{background:'rgba(255,182,39,.18)',border:'1.5px solid rgba(255,182,39,.5)',borderRadius:12,padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between',animationDelay:'400ms'}}>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.8,letterSpacing:'.12em',color:'#FFB627'}}>{DATA.regional.name.toUpperCase()} TEENS</div>
+            <div style={{fontSize:12,fontWeight:600,opacity:.85}}>{DATA.regional.teens.toLocaleString()} of us across {DATA.regional.schools} schools</div>
+          </div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22}}>{DATA.regional.shabbatons}<span style={{fontSize:12,marginLeft:2}}>shabbatons</span></div>
+        </div>
+        <div className="anim-rise" style={{background:'rgba(255,46,147,.18)',border:'1.5px solid rgba(255,46,147,.5)',borderRadius:12,padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between',animationDelay:'550ms'}}>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.8,letterSpacing:'.12em',color:'#FF6BB5'}}>JEWISH TEENS NATIONWIDE</div>
+            <div style={{fontSize:12,fontWeight:600,opacity:.85}}>{DATA.national.teens.toLocaleString()}+ teens · {DATA.national.programs.toLocaleString()}+ programs</div>
+          </div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22}}>{Math.round(DATA.national.moments/1000)}k<span style={{fontSize:12,marginLeft:2}}>moments</span></div>
+        </div>
+      </div>
+      <div className="copy anim-rise" style={{position:'absolute',bottom:70,left:28,right:28,animationDelay:'900ms',textAlign:'center',fontWeight:600}}>
+        We're {DATA.chapter.name.split(' ')[0]}. <span className="marker" style={{fontSize:22,color:'#FFB627'}}>And we're part of something big.</span>
+      </div>
+    </div>
+  );
+}
+
+// C10 — Chapter Share
+function ChapShare({ active }) {
+  const c = DATA.chapter;
+  const shareStats = [
+    { n: String(c.events),        label:'programs together' },
+    { n: String(c.uniqueTeens),   label:'of us, one chapter' },
+    { n: c.totalMoments.toLocaleString(), label:'moments stacked up' },
+    { n: String(c.newTeens),      label:'new faces joined us' },
+    { n: `${c.repeatRate}%`,      label:'kept coming back' },
+  ];
+  return (
+    <div className="card" style={{background:'linear-gradient(165deg,#6A2BFF 0%,#FF2E93 60%,#FFB627 100%)',color:'#fff',padding:0}}>
+      <Confetti density={22} seed={20}/>
+      <div className="anim-pop" style={{position:'absolute',top:90,left:26,right:26,bottom:160,background:'#150428',borderRadius:28,padding:24,color:'#fff',border:'3px solid #fff',boxShadow:'0 30px 60px rgba(0,0,0,.4)',display:'flex',flexDirection:'column',animationDelay:'120ms'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#FFB627',color:'#150428',display:'grid',placeItems:'center',fontFamily:'var(--font-display)',fontWeight:900,fontSize:12}}>JSU</div>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:12,letterSpacing:'.04em'}}>NCSY · JSU</div>
+          </div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:10,opacity:.6,letterSpacing:'.1em'}}>'25 · '26</div>
+        </div>
+        <div style={{marginTop:16}}>
+          <div style={{fontFamily:'var(--font-marker)',fontSize:28,color:'#FFB627',lineHeight:1}}>we are</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:50,lineHeight:.9,letterSpacing:'-.02em',marginTop:4,fontStyle:'italic'}}>{c.name.split(' ')[0]}<br/>{c.name.split(' ').slice(1).join(' ')}.</div>
+        </div>
+        <div style={{marginTop:14,display:'flex',flexDirection:'column',gap:7,flex:1}}>
+          {shareStats.map((s,i) => (
+            <div key={i} style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',borderBottom:'1px dashed rgba(255,255,255,.18)',paddingBottom:4}}>
+              <span style={{fontSize:11,fontWeight:600,opacity:.85,textTransform:'uppercase',letterSpacing:'.08em'}}>{s.label}</span>
+              <span style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:26,color:['#FF2E93','#FFB627','#29D69A','#00C2FF','#FF6BB5'][i],letterSpacing:'-.03em'}}>{s.n}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:8,background:'linear-gradient(90deg,#FFB627,#FF2E93)',color:'#150428',borderRadius:12,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontFamily:'var(--font-mono)',fontSize:9,fontWeight:700,letterSpacing:'.16em'}}>WE'RE</span>
+          <span style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:16,fontStyle:'italic'}}>{c.persona} ✦</span>
+        </div>
+        <div style={{marginTop:8,fontSize:10,opacity:.6,fontFamily:'var(--font-mono)',textAlign:'center',letterSpacing:'.1em'}}>{c.school.toUpperCase()} · {c.hashtag}</div>
+      </div>
+      <div className="anim-rise" style={{position:'absolute',bottom:60,left:24,right:24,display:'flex',gap:8,animationDelay:'300ms'}}>
+        <button className="cta cta-light" style={{flex:1}} onClick={() => navigator.share && navigator.share({title:`${c.name} Wrapped`,text:`${c.events} events. ${c.uniqueTeens} teens. ${c.persona}.`,url:location.href}).catch(()=>{})}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8a3 3 0 1 0-2.83-4M6 12a3 3 0 1 0 0 0M18 19a3 3 0 1 0-2.83-4M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Post to story
+        </button>
+        <button className="cta cta-dark" style={{flex:1}} onClick={() => window.print()}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Save image
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   CARD LISTS
+   ============================================================ */
+const CARDS_STUDENT = [
+  { key:'cover',    Component:CardCover,        label:'Cover' },
+  { key:'atten',    Component:CardAttendance,   label:'Attendance' },
+  { key:'first',    Component:CardFirstMoment,  label:'First moment' },
+  { key:'streak',   Component:CardStreak,       label:'Streak' },
+  { key:'vibe',     Component:CardVibe,         label:'Top vibe' },
+  { key:'conn',     Component:CardConnection,   label:'Connector' },
+  { key:'depth',    Component:CardExperience,   label:'Depth' },
+  { key:'chapter',  Component:CardChapter,      label:'Chapter recap' },
+  { key:'movement', Component:CardMovement,     label:'Bigger picture' },
+  { key:'share',    Component:CardShare,        label:'Share card' },
+];
+
+const CARDS_CHAPTER = [
+  { key:'c-cover',   Component:ChapCover,      label:'We are…' },
+  { key:'c-events',  Component:ChapEvents,     label:'38 programs' },
+  { key:'c-reach',   Component:ChapReach,      label:'186 of us' },
+  { key:'c-moments', Component:ChapMoments,    label:'1,240 moments' },
+  { key:'c-new',     Component:ChapNew,        label:'74 first-timers' },
+  { key:'c-loyal',   Component:ChapRetention,  label:'62% came back' },
+  { key:'c-big',     Component:ChapBiggest,    label:'Purim Bash' },
+  { key:'c-persona', Component:ChapPersona,    label:'Who we are' },
+  { key:'c-move',    Component:ChapMovement,   label:'Not alone' },
+  { key:'c-share',   Component:ChapShare,      label:'Post it' },
+];
+
+/* ============================================================
+   STORY PLAYER
+   ============================================================ */
+const SLIDE_MS = 6500;
+
+function Story({ cards, idx, setIdx }) {
+  const n = cards.length;
+  const [paused, setPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [autoplay] = useState(false); // set to true for kiosk mode
+
+  useEffect(() => {
+    if (!autoplay || paused) return;
+    let raf, start;
+    const tick = (t) => {
+      if (!start) start = t;
+      const p = Math.min(1, (t-start)/SLIDE_MS);
+      setProgress(p);
+      if (p >= 1) { if (idx < n-1) setIdx(idx+1); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [idx, paused, autoplay]);
+
+  useEffect(() => { setProgress(0); }, [idx]);
+
+  // Kick stale pending CSS animations (Chrome quirk)
+  useEffect(() => {
+    const kick = () => {
+      document.querySelectorAll('.anim-rise,.anim-pop').forEach(el => {
+        el.classList.add('is-ready');
+        el.getAnimations && el.getAnimations().forEach(a => {
+          if (a.pending) { try { a.startTime = a.timeline?.currentTime ?? 0; } catch(_) { try { a.finish(); } catch(__){} } }
+        });
+      });
+    };
+    const t1 = requestAnimationFrame(() => requestAnimationFrame(kick));
+    const t2 = setTimeout(kick, 200);
+    return () => { cancelAnimationFrame(t1); clearTimeout(t2); };
+  }, [idx, cards]);
+
+  const next = () => setIdx(Math.min(n-1, idx+1));
+  const prev = () => setIdx(Math.max(0, idx-1));
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+      if (e.key==='ArrowRight') next();
+      if (e.key==='ArrowLeft')  prev();
+      if (e.key===' ') { e.preventDefault(); setPaused(p=>!p); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [idx]);
+
+  const Active = cards[idx].Component;
+
+  return (
+    <div style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#000'}}>
+      {/* Progress bars */}
+      <div className="story-progress">
+        {cards.map((_,i) => (
+          <div className="seg" key={i}>
+            <div className="fill" style={{
+              width: i<idx?'100%':i===idx?`${progress*100}%`:'0%',
+              transition: i===idx?'none':'width 200ms',
+            }}/>
+          </div>
+        ))}
+      </div>
+
+      {/* Brand header */}
+      <div className="story-header" style={{color:'#fff',mixBlendMode:'difference'}}>
+        <div className="brand">
+          <span className="brand-mark">J</span>
+          <span>JSU Wrapped</span>
+        </div>
+        <div style={{fontSize:11,fontWeight:600,opacity:.85,fontFamily:'var(--font-mono)'}}>
+          {String(idx+1).padStart(2,'0')} / {n}
+        </div>
+      </div>
+
+      {/* Active card */}
+      <div key={cards[idx].key} style={{position:'absolute',inset:0}}>
+        <Active active={true}/>
+      </div>
+
+      {/* Tap zones */}
+      <div className="story-controls">
+        <div onClick={prev}/>
+        <div
+          onMouseDown={()=>setPaused(true)} onMouseUp={()=>setPaused(false)}
+          onMouseLeave={()=>setPaused(false)}
+          onTouchStart={()=>setPaused(true)} onTouchEnd={()=>setPaused(false)}
+        />
+        <div onClick={next}/>
+      </div>
+
+      {/* Right-edge chevron hint */}
+      {idx < n-1 && (
+        <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',zIndex:22,pointerEvents:'none',animation:'drift 1.6s ease-in-out infinite'}}>
+          <div style={{width:32,height:32,borderRadius:999,background:'rgba(255,255,255,.18)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,.35)',color:'#fff',display:'grid',placeItems:'center',mixBlendMode:'difference'}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+        </div>
+      )}
+
+      {/* Replay button on last card */}
+      {idx === n-1 && (
+        <div style={{position:'absolute',left:'50%',bottom:6,zIndex:25,transform:'translateX(-50%)'}}>
+          <button onClick={()=>setIdx(0)} style={{background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,.4)',color:'#fff',fontSize:11,fontWeight:700,padding:'6px 14px',borderRadius:999,letterSpacing:'.08em',cursor:'pointer',fontFamily:'var(--font-body)'}}>↺ Replay</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   APP  — responsive scale + view toggle
+   ============================================================ */
+function App() {
+  // Read ?view=chapter from URL to set initial view
+  const initialView = new URLSearchParams(location.search).get('view') === 'chapter' ? 'chapter' : 'student';
+  const [view, setView] = useState(initialView);
+  const cards = view==='chapter' ? CARDS_CHAPTER : CARDS_STUDENT;
+  const [idx, setIdx] = useState(0);
+  const [scale, setScale] = useState(1);
+  const toggleRef = useRef(null);
+
+  // Reset slide when switching view
+  useEffect(() => { setIdx(0); }, [view]);
+
+  // Responsive scale: fit 430×932 into the available viewport
+  useEffect(() => {
+    const update = () => {
+      const toggleH = toggleRef.current ? toggleRef.current.offsetHeight + 28 : 64;
+      const sw = window.innerWidth / 430;
+      const sh = (window.innerHeight - toggleH) / 932;
+      setScale(Math.min(sw, sh, 1));
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const scaledW = Math.round(430 * scale);
+  const scaledH = Math.round(932 * scale);
+
+  return (
+    <div className="page-bg">
+      {/* View toggle */}
+      <div className="view-toggle" ref={toggleRef}>
+        <button className={view==='student'?'active':''} onClick={()=>setView('student')}>My Year</button>
+        <button className={view==='chapter'?'active':''} onClick={()=>setView('chapter')}>Our Chapter</button>
+      </div>
+
+      {/* Story player, scaled */}
+      <div className="story-outer" style={{width:scaledW, height:scaledH}}>
+        <div className="story-inner" style={{transform:`scale(${scale})`, transformOrigin:'top left'}}>
+          <Story cards={cards} idx={idx} setIdx={setIdx}/>
+        </div>
+      </div>
+
+      <p className="story-hint">Tap right to advance · Tap left to go back · Hold to pause · ← → Space</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
